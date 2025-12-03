@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rechoice_app/login_page.dart';
+import 'package:rechoice_app/pages/login_page.dart';
 //test 
 //test gik
 //test agik
