@@ -66,74 +66,84 @@ class _LoginPageState extends State<LoginPage> {
 
                 //white container for textFields
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Column(
-                        children: <Widget>[
-                          SizedBox(height: 40),
-
-                          //email/phone number textfield
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Email/Phone Number',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Column(
+                          children: <Widget>[
+                            SizedBox(height: 40),
+                    
+                            //email/phone number textfield
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Email/Phone Number',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Mytextfield(
-                            controller: emailController,
-                            hintText: 'Enter your email or phone number',
-                            obscureText: false,
-                          ),
-
-                          SizedBox(height: 20),
-
-                          //password textfield
-                          Row(
-                            children: [
-                              Text(
-                                'Password',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            ),
+                    
+                            SizedBox(height: 10),
+                    
+                            Mytextfield(
+                              controller: emailController,
+                              hintText: 'Enter your email or phone number',
+                              obscureText: false,
+                            ),
+                    
+                            SizedBox(height: 20),
+                    
+                            //password textfield
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Password',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Mytextfield(
-                            controller: passwordController,
-                            hintText: 'Enter your password',
-                            obscureText: true,
-                          ),
-
-                          //forgot password textbutton
-
-                          //signin button
-
-                          //or continue with
-
-                          //google button
-
-                          // don't have an account? sign up textbutton
-
-                          //user or admin login toggle
-                        ],
+                            ),
+                    
+                            SizedBox(height: 10),
+                    
+                            Mytextfield(
+                              controller: passwordController,
+                              hintText: 'Enter your password',
+                              obscureText: true,
+                            ),
+                    
+                            //forgot password textbutton
+                    
+                            //signin button
+                    
+                            //or continue with
+                    
+                            //google button
+                    
+                            // don't have an account? sign up textbutton
+                    
+                            //user or admin login toggle
+                          ],
+                        ),
                       ),
                     ),
                   ),
