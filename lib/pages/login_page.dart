@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rechoice_app/components/btn_google_sign_in.dart';
+import 'package:rechoice_app/components/btn_sign_in.dart';
 import 'package:rechoice_app/components/my_text_field.dart';
 
 class LoginPage extends StatefulWidget {
@@ -13,6 +15,12 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
+
+    //sign user in method
+    void signUserIn() {}
+
+    //sign user in with google method
+    void googleSignIn() {}
 
     return Scaffold(
       body: SafeArea(
@@ -163,33 +171,8 @@ class _LoginPageState extends State<LoginPage> {
 
                             SizedBox(height: 10),
 
-                            //signin button (container)
-                            Container(
-                              height: 50,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 25.0,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.centerLeft,
-                                  colors: [
-                                    Colors.blue[800]!,
-                                    Colors.blue[400]!,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Sign In',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            //signin button (firebase auth)
+                            BtnSignIn(onTap: signUserIn),
 
                             SizedBox(height: 20),
 
@@ -230,53 +213,8 @@ class _LoginPageState extends State<LoginPage> {
 
                             SizedBox(height: 20),
 
-                            //google button (container)
-                            Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: Container(
-                                    height: 50,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 25.0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: BoxBorder.all(
-                                        color: Colors.black12,
-                                      ),
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 25.0,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: <Widget>[
-                                          Image.asset(
-                                            'assets/images/google.png',
-                                            height: 30,
-                                            width: 30,
-                                          ),
-
-                                          SizedBox(width: 20),
-
-                                          Text(
-                                            'Continue with Google',
-                                            style: TextStyle(
-                                              color: Colors.grey[700],
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            //google button (firebase auth)
+                            BtnGoogleSignIn(onTap: googleSignIn),
 
                             SizedBox(height: 10),
 
