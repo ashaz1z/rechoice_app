@@ -18,8 +18,7 @@ class _LoginPageState extends State<LoginPage> {
 
     //sign user in method
     void signUserIn() {}
-
-    //sign user in with google method
+    //google sign in method
     void googleSignIn() {}
 
     return Scaffold(
