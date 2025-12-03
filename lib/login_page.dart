@@ -166,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
 
                             SizedBox(height: 10),
 
-                            //signin button
+                            //signin button (container)
                             Container(
                               height: 50,
                               margin: const EdgeInsets.symmetric(
@@ -194,9 +194,92 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
 
-                            //or continue with
+                            SizedBox(height: 20),
 
-                            //google button
+                            //or
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 25.0,
+                              ),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10.0,
+                                    ),
+                                    child: Text(
+                                      'or',
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 20),
+
+                            //google button (container)
+                            Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Container(
+                                    height: 50,
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 25.0,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: BoxBorder.all(
+                                        color: Colors.black12,
+                                      ),
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 25.0,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Image.asset(
+                                            'assets/images/google.png',
+                                            height: 30,
+                                            width: 30,
+                                          ),
+
+                                          SizedBox(width: 20),
+
+                                          Text(
+                                            'Continue with Google',
+                                            style: TextStyle(
+                                              color: Colors.grey[700],
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
 
                             // don't have an account? sign up textbutton
 
