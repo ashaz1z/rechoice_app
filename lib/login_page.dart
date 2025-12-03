@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(2.0),
                   child: Column(
                     children: <Widget>[
                       //LOGO ReChoice
@@ -40,9 +40,8 @@ class _LoginPageState extends State<LoginPage> {
                         'assets/images/logo.png',
                         height: 250,
                         width: 250,
+                        color: Colors.white,
                       ),
-
-                      SizedBox(height: 10),
 
                       //text Welcome Back ! Sign in to continue
                       Text(
@@ -281,7 +280,41 @@ class _LoginPageState extends State<LoginPage> {
                               ],
                             ),
 
+                            SizedBox(height: 10),
+
                             // don't have an account? sign up textbutton
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 25.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Text(
+                                    'Don\'t have an account?',
+                                    style: TextStyle(color: Colors.grey[700]),
+                                  ),
+
+                                  SizedBox(width: 3),
+
+                                  TextButton(
+                                    onPressed: () {},
+                                    child: Text(
+                                      'Sign Up',
+                                      style: TextStyle(
+                                        color: const Color.fromARGB(
+                                          255,
+                                          0,
+                                          0,
+                                          230,
+                                        ),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
 
                             //user or admin login toggle
                           ],
