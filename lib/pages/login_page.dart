@@ -4,7 +4,8 @@ import 'package:rechoice_app/components/btn_sign_in.dart';
 import 'package:rechoice_app/components/my_text_field.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final void Function()? onPressed;
+  const LoginPage({super.key, required this.onPressed});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -110,6 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                               controller: emailController,
                               hintText: 'Enter your email or phone number',
                               obscureText: false,
+                              icon: Icons.email,
                             ),
 
                             SizedBox(height: 20),
@@ -139,6 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                               controller: passwordController,
                               hintText: 'Enter your password',
                               obscureText: true,
+                              icon: Icons.lock,
                             ),
 
                             SizedBox(height: 10),
@@ -171,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: 10),
 
                             //signin button (firebase auth)
-                            BtnSignIn(onTap: signUserIn),
+                            BtnSignIn(onTap: signUserIn, text: 'Sign In'),
 
                             SizedBox(height: 20),
 
@@ -233,7 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                                   SizedBox(width: 3),
 
                                   TextButton(
-                                    onPressed: () {},
+                                    onPressed: widget.onPressed,
                                     child: Text(
                                       'Sign Up',
                                       style: TextStyle(
