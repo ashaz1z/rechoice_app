@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rechoice_app/pages/login_page.dart';
-//test 
-//test gik
-//test agik
+import 'package:rechoice_app/auth.dart/login_or_register.dart';
 
 void main() {
   runApp(const MainApp());
@@ -15,7 +12,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return  MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+      home: LoginOrRegister(),
     );
   }
 }
