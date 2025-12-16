@@ -80,22 +80,16 @@ Don't forget to give the project a star! Thanks again!
 5. Open a Pull Request
 
 ## Folder Structures
-├───auth
-│       login_or_register.dart
-│       
-├───components
-│       btn_google_sign_in.dart
-│       btn_sign_in.dart
-│       my_text_field.dart
-│       
-└───pages
-        dashboard.dart
-        login_page.dart
-        main.dart
-        register.dart
-        
 
 
-
+| Folder                  | Purpose                                  |
+| ----------------------- | ---------------------------------------- |
+| `pages/`                | Application pages                        |
+| `pages/admin/`          | Admin dashboard, moderation, analytics   |
+| `pages/ai-features/`    | AI chatbot                               |
+| `pages/auth/`           | Login, registration, password management |
+| `pages/main-dashboard/` | Catalog, dashboard, search, products     |
+| `pages/payment/`        | Cart and payment flow                    |
+| `pages/users/`          | User profile, reviews, product listing   |
 
 
