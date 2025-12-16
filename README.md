@@ -63,8 +63,8 @@ ReChoice is a standalone mobile application designed to provide UNIMAS students 
 Install the following on your machine:
 
 - Flutter SDK
-- Android Studio or Xcode (for mobile builds)
-- VS Code or similar editor
+- Android Studio or Visual Studio Code for IDE Editor
+- 
 
 ## Contributing
 
@@ -73,20 +73,29 @@ Contributions are what make the open source community such an amazing place to l
 If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
-1. Clone the Project
+1. Clone the Project (`git clone https://github.com/MhdShafiqZakaria/rechoice_app.git`) then (` cd rechoice_app`)
 2. Create your Feature Branch (`git checkout -b branch-name`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin branch-name`)
 5. Open a Pull Request
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## Folder Structures
+├───auth
+│       login_or_register.dart
+│       
+├───components
+│       btn_google_sign_in.dart
+│       btn_sign_in.dart
+│       my_text_field.dart
+│       
+└───pages
+        dashboard.dart
+        login_page.dart
+        main.dart
+        register.dart
+        
 
 
-### Clone the Repo
-
-```bash
-git clone https://github.com/MhdShafiqZakaria/rechoice_app.git
-cd rechoice_app
 
 
 
