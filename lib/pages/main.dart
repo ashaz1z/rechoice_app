@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rechoice_app/auth/login_or_register.dart';
+import 'package:rechoice_app/pages/auth/login_or_register.dart';
 
 void main() {
   runApp(const MainApp());

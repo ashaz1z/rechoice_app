@@ -236,7 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                                   SizedBox(width: 3),
 
                                   TextButton(
-                                    onPressed: widget.onPressed,
+                                    onPressed: widget.onPressed, 
                                     child: Text(
                                       'Sign Up',
                                       style: TextStyle(
