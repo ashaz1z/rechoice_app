@@ -5,7 +5,7 @@ This app currently has minimal project-specific documentation.
 
 ## Purpose
 
-Describe what this Flutter app is for (e.g., user goals, core problem it solves).
+ReChoice is a standalone mobile application designed to provide UNIMAS students with a sustainable, cost-effective, and convenient e-commerce platform for buying, selling, and reusing pre-owned items. The system focuses on high-performance, read-heavy operations with reliable server-side data management to ensure smooth browsing, fast item discovery, and consistent user experience even during peak usage. With built-in AI features such as a chatbot for instant assistance and image recognition for quick product listing, ReChoice reduces user effort and enhances overall engagement.
 
 ## Status
 
@@ -15,11 +15,42 @@ Describe what this Flutter app is for (e.g., user goals, core problem it solves)
 
 ## Features
 
-List any implemented features. If none yet, remove this section.
+- **Home Screen / Dashboard**
+  - Main entry point of the application.
+  - Provides an overview to help users understand and navigate the app.
 
-- Example: Authentication screens
-- Example: API integration
-- Example: Basic routing
+- **Account Management**
+  - User registration and login.
+  - Profile management.
+  - Item listing management for users and sellers.
+
+- **Item Management**
+  - Listing of preloved items by users and sellers.
+  - Browsing and searching for available items.
+  - Item discovery through structured categories and search tools.
+
+- **Communication and Transactions**
+  - In-app communication between users and sellers.
+  - Inquiry handling and discussion before transactions.
+  - Support for transaction-related interactions.
+
+- **AI Chatbot Assistance**
+  - AI-powered chatbot for user guidance.
+  - Provides user manuals and answers to frequently asked questions (FAQ).
+  - Supports onboarding and feature usage.
+
+- **AI Image Recognition**
+  - Image-based item recognition using Artificial Intelligence.
+  - Helps users identify and search for similar items efficiently.
+
+- **Admin Management**
+  - Dedicated admin dashboard.
+  - User, listing, and activity management.
+  - Analytics and monitoring for system performance and usage.
+
+- **Real-time Notifications**
+  - Instant alerts for messages, offers, and system updates.
+  - Keeps users informed of important activities.
 
 ## Screenshots / Demo
 
