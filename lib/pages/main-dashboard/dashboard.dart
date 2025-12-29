@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rechoice_app/components/category_btn.dart';
 import 'package:rechoice_app/components/product_card.dart';
-import 'package:rechoice_app/models/category_model.dart';
-import 'package:rechoice_app/models/items_model.dart';
+import 'package:rechoice_app/models/model/category_model.dart';
+import 'package:rechoice_app/models/model/items_model.dart';
 import 'package:rechoice_app/services/dummy_data.dart';
 
 class Dashboard extends StatefulWidget {

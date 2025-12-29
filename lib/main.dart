@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 import 'package:rechoice_app/pages/admin/admin_dashboard.dart';
 import 'package:rechoice_app/pages/admin/listing_moderation.dart';
 import 'package:rechoice_app/pages/admin/report_analytics.dart';
@@ -13,6 +15,7 @@ import 'package:rechoice_app/pages/main-dashboard/catalog.dart';
 import 'package:rechoice_app/pages/main-dashboard/dashboard.dart';
 import 'package:rechoice_app/pages/main-dashboard/product.dart';
 import 'package:rechoice_app/pages/main-dashboard/search_result.dart';
+import 'package:rechoice_app/pages/main-dashboard/wishlist.dart';
 import 'package:rechoice_app/pages/payment/cart.dart';
 import 'package:rechoice_app/pages/payment/payment.dart';
 import 'package:rechoice_app/pages/users/add_new_products.dart';
@@ -34,7 +37,12 @@ void main() async {
     print('Error connecting to Firestore: $e');
   }
 
-  runApp(const MainApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => WishlistViewModel(),
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -55,10 +63,11 @@ class MainApp extends StatelessWidget {
         '/changePW': (context) => const ChangePassword(),
         '/dashboard': (context) => const Dashboard(),
         '/catalog': (context) => const CatalogsPage(),
-        '/search': (context) => SearchResult(searchResults: [],),
+        '/search': (context) => SearchResult(searchResults: []),
         '/product': (context) => const Product(),
         '/cart': (context) => const CartPage(),
         '/payment': (context) => const PaymentPage(),
+        '/wishlist': (context) => const WishlistPage(),
         '/profile': (context) => const UserProfilePage(),
         '/addProd': (context) => const MyProductsPage(),
         '/addNewProd': (context) => const AddProductPage(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rechoice_app/pages/main-dashboard/catalog.dart';
 import 'package:rechoice_app/pages/main-dashboard/dashboard.dart';
+import 'package:rechoice_app/pages/main-dashboard/wishlist.dart';
 import 'package:rechoice_app/pages/payment/cart.dart';
 import 'package:rechoice_app/pages/users/user_profile_info.dart';
 
@@ -26,6 +27,7 @@ class _LandingPageState extends State<LandingPage> {
       Dashboard(),
       CatalogsPage(onBackPressed: _goToDashboard),
       CartPage(onBackPressed: _goToDashboard),
+      WishlistPage(onBackPressed: _goToDashboard),
       UserProfilePage(onBackPressed: _goToDashboard),
     ];
 
@@ -73,10 +75,10 @@ class _LandingPageState extends State<LandingPage> {
                     icon: Icon(Icons.shopping_cart_outlined),
                     label: 'Cart',
                   ),
-                  // BottomNavigationBarItem(
-                  //   icon: Icon(Icons.favorite_outline),
-                  //   label: 'Wishlist',
-                  // ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.favorite_outline),
+                    label: 'Wishlist',
+                  ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline),
                     label: 'Profile',

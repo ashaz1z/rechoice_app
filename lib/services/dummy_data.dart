@@ -1,6 +1,6 @@
-import 'package:rechoice_app/models/category_model.dart';
-import 'package:rechoice_app/models/items_model.dart';
-import 'package:rechoice_app/models/users_model.dart';
+import 'package:rechoice_app/models/model/category_model.dart';
+import 'package:rechoice_app/models/model/items_model.dart';
+import 'package:rechoice_app/models/model/users_model.dart';
 
 class DummyData {
   //Category dummy data

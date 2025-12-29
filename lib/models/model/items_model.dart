@@ -1,5 +1,5 @@
 //ITEM CLASS
-import 'package:rechoice_app/models/category_model.dart';
+import 'package:rechoice_app/models/model/category_model.dart';
 
 class Items {
   final int itemID;

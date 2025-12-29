@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rechoice_app/models/items_model.dart';
+import 'package:provider/provider.dart';
+import 'package:rechoice_app/models/model/items_model.dart';
+import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 import 'package:rechoice_app/services/dummy_data.dart';
 
 class Product extends StatefulWidget {
@@ -11,7 +13,6 @@ class Product extends StatefulWidget {
 
 class _ProductState extends State<Product> {
   int _quantity = 1;
-  bool _isFavourite = false;
   late Items currentItem;
 
   @override
@@ -90,7 +91,7 @@ class _ProductState extends State<Product> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.shade100,
                       spreadRadius: 2,
                       blurRadius: 6,
                       offset: const Offset(0, 3),
@@ -117,13 +118,29 @@ class _ProductState extends State<Product> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.favorite_border),
-                    color: Colors.red,
-                    onPressed: () {
-                      setState(() {
-                        _isFavourite = !_isFavourite;
-                      });
+
+                  Consumer<WishlistViewModel>(
+                    builder: (context, wishlistViewModel, child) {
+                      final isInWishList = wishlistViewModel.isItemInWishlist(
+                        currentItem.itemID,
+                      ); 
+                      // Wishlist button
+                      return IconButton(
+                        icon: Icon(
+                          //check if the wishlist item is in the list yet
+                          isInWishList ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                        ),
+                        onPressed: () {
+                          if (isInWishList) {
+                            wishlistViewModel.removeFromWishlist(
+                              currentItem.itemID,
+                            );
+                          } else {
+                            wishlistViewModel.addToWishlist(currentItem);
+                          }
+                        },
+                      );
                     },
                   ),
                 ],
