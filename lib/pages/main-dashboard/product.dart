@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rechoice_app/models/model/items_model.dart';
+import 'package:rechoice_app/models/viewmodels/cart.view_model.dart';
 import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 import 'package:rechoice_app/services/dummy_data.dart';
 
@@ -123,7 +124,7 @@ class _ProductState extends State<Product> {
                     builder: (context, wishlistViewModel, child) {
                       final isInWishList = wishlistViewModel.isItemInWishlist(
                         currentItem.itemID,
-                      ); 
+                      );
                       // Wishlist button
                       return IconButton(
                         icon: Icon(
@@ -285,7 +286,24 @@ class _ProductState extends State<Product> {
             Row(
               children: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    final cartVM = Provider.of<CartViewModel>(
+                      context,
+                      listen: false,
+                    );
+                    cartVM.addToCart(currentItem);
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(
+                          'Item added to cart',
+                          textAlign: TextAlign.center,
+                        ),
+                        contentPadding: EdgeInsets.all(20),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.add_shopping_cart),
                   iconSize: 28,
                   color: Colors.blue,

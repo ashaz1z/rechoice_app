@@ -20,20 +20,21 @@ class WishlistViewModel extends ChangeNotifier {
       // Create a new list with the added item to trigger notification
       _wishlistItems.add(items);
       notifyListeners();
-      print('✓ Added: ${items.title} (ID: ${items.itemID})');
-      print('  Total items: ${itemCount}');
-    } else {
-      print('✗ Already in wishlist: ${items.title}');
-    }
+      // print('✓ Added: ${items.title} (ID: ${items.itemID})');
+      // print('  Total items: ${itemCount}');
+    } 
+    // else {
+    //   print('✗ Already in wishlist: ${items.title}');
+    // }
   }
 
   //Method to remove the items from the wishlist
   void removeFromWishlist(int itemsID) {
     // Filter the list to remove the specified item and update the
     _wishlistItems.removeWhere((product) => product.itemID == itemsID);
-    print('✓ Removed item ID: $itemsID');
-    print('  Total items: ${itemCount}');
     notifyListeners();
+    // print('✓ Removed item ID: $itemsID');
+    // print('  Total items: ${itemCount}');
   }
 
   //Method to clear all items in the wishkist

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rechoice_app/models/model/items_model.dart';
+import 'package:rechoice_app/models/viewmodels/cart.view_model.dart';
 import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 
 class WishlistCard extends StatelessWidget {
@@ -123,14 +124,20 @@ class WishlistCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          // Buttons
+          // Buttons Add to Cart
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      final cartVM = Provider.of<CartViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      cartVM.addToCart(items);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       padding: const EdgeInsets.symmetric(vertical: 8),

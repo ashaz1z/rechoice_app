@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rechoice_app/components/wishlist_card.dart';
+import 'package:rechoice_app/models/viewmodels/cart.view_model.dart';
 import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 
 class WishlistPage extends StatefulWidget {
@@ -13,20 +14,11 @@ class WishlistPage extends StatefulWidget {
 }
 
 class _WishlistPageState extends State<WishlistPage> {
-  late final WishlistViewModel viewModel;
-
-  @override
-  void initState() {
-    viewModel = WishlistViewModel();
-
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<WishlistViewModel>(
-      builder: (context, viewModel, child) {
-        final items = viewModel.items;
+      builder: (context, wishlistVM, child) {
+        final items = wishlistVM.items;
         return Scaffold(
           backgroundColor: Colors.grey[50],
           body: Column(
@@ -104,7 +96,7 @@ class _WishlistPageState extends State<WishlistPage> {
                           TextButton(
                             onPressed: items.isEmpty
                                 ? null
-                                : viewModel.clearAllFromWishList,
+                                : wishlistVM.clearAllFromWishList,
                             child: const Text(
                               'Clear All',
                               style: TextStyle(
@@ -131,77 +123,87 @@ class _WishlistPageState extends State<WishlistPage> {
                         itemBuilder: (context, index) {
                           return WishlistCard(
                             items: items[index],
-                            onRemove: () => viewModel.removeFromWishlist(
+                            onRemove: () => wishlistVM.removeFromWishlist(
                               items[index].itemID,
                             ),
                           );
                         },
                       ),
                     ),
+
                     // Bottom Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade50,
-                            spreadRadius: 2,
-                            blurRadius: 8,
-                            offset: const Offset(0, -2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Items:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[700],
+                    if (items.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.shade50,
+                              spreadRadius: 2,
+                              blurRadius: 8,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Total Items:',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '${items.length} Items',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                Text(
+                                  '${items.length} Items',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                print('Add All to Cart pressed');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  final cartVM = Provider.of<CartViewModel>(
+                                    context,
+                                    listen: false,
+                                  );
+                                  //add all item from wishlist to cart
+                                  for (var item in items.toList()) {
+                                    cartVM.addFromWishlist(item);
+                                  }
+                                  ;
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Add All to Cart',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                child: const Text(
+                                  'Add All to Cart',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

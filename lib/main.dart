@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:rechoice_app/models/viewmodels/cart.view_model.dart';
 import 'package:rechoice_app/models/viewmodels/wishlist_view_model.dart';
 import 'package:rechoice_app/pages/admin/admin_dashboard.dart';
 import 'package:rechoice_app/pages/admin/listing_moderation.dart';
@@ -38,8 +39,19 @@ void main() async {
   }
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => WishlistViewModel(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WishlistViewModel()),
+        ChangeNotifierProxyProvider<WishlistViewModel, CartViewModel>(
+          create: (context) => CartViewModel(
+            wishlistViewModel: Provider.of<WishlistViewModel>(
+              context,
+              listen: false,
+            ),
+          ),
+          update: (context, wishlist, cart) => cart!,
+        ),
+      ],
       child: const MainApp(),
     ),
   );
