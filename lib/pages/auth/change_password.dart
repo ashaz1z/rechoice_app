@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rechoice_app/pages/auth/authenticate.dart';
+import 'package:rechoice_app/models/services/authenticate.dart';
 
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});

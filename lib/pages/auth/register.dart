@@ -1,14 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rechoice_app/components/btn_google_sign_in.dart';
 import 'package:rechoice_app/components/btn_sign_in.dart';
 import 'package:rechoice_app/components/my_text_field.dart';
-import 'package:rechoice_app/pages/auth/authenticate.dart';
+import 'package:rechoice_app/models/viewmodels/auth_view_model.dart';
 
 class Register extends StatefulWidget {
-  final Function()? onPressed;
+  final VoidCallback? onPressed;
 
-  const Register({super.key, required this.onPressed});
+  const Register({super.key, this.onPressed});
 
   @override
   State<Register> createState() => _RegisterState();
@@ -19,19 +19,43 @@ class _RegisterState extends State<Register> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
-  String errorMessage = '';
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    nameController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   //sign user in method
-  void createAccount() async {
+  void _createAccount(BuildContext context) async {
+    // validate inputs
+    if (nameController.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Name cannot be empty')));
+      }
+
+      return;
+    }
+
+    final authVM = context.read<AuthViewModel>();
     try {
-      await authService.value.register(
+      await authVM.register(
+        name: nameController.text.trim(),
         email: emailController.text,
-        password: passwordController.text,
+        password: passwordController.text.trim(),
       );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        errorMessage = e.message ?? 'User cannot Register';
-      });
+
+      if (authVM.errorMessage == null) {}
+    } catch (error) {
+      // Handle errors (e.g., registration failed)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Account creation failed: ${error.toString()}')),
+      );
     }
   }
 
@@ -98,144 +122,160 @@ class _RegisterState extends State<Register> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          SizedBox(height: 20),
-
-                          //enter name textfield
-                          Text(
-                            'Enter Your Name',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Mytextfield(
-                            controller: nameController,
-                            hintText: 'Enter Your Full Name',
-                            obscureText: false,
-                            icon: Icons.person,
-                          ),
-
-                          SizedBox(height: 20),
-
-                          //email textfield
-                          Text(
-                            'Email',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Mytextfield(
-                            controller: emailController,
-                            hintText: ' Enter your email',
-                            obscureText: false,
-                            icon: Icons.email,
-                          ),
-
-                          SizedBox(height: 20),
-
-                          //password textfield
-                          Text(
-                            'Password',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Mytextfield(
-                            controller: passwordController,
-                            hintText: 'Create a  strong password',
-                            obscureText: true,
-                            icon: Icons.lock,
-                          ),
-
-                          SizedBox(height: 30),
-
-                          //sign in button (firebase auth)
-                          Btn(onTap: createAccount, text: 'Create Account'),
-
-                          SizedBox(height: 10),
-
-                          Text(
-                            errorMessage,
-                            style: TextStyle(color: Colors.redAccent),
-                          ),
-                          SizedBox(height: 20),
-
-                          //or
-                          Row(
+                      child: Consumer<AuthViewModel>(
+                        builder: (context, authVM, child) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Expanded(
-                                child: Divider(
-                                  thickness: 1,
-                                  color: Colors.grey[400],
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10.0,
-                                ),
-                                child: Text(
-                                  'or',
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  thickness: 1,
-                                  color: Colors.grey[400],
-                                ),
-                              ),
-                            ],
-                          ),
+                              SizedBox(height: 20),
 
-                          SizedBox(height: 20),
-
-                          //google button (firebase auth)
-                          BtnGoogleSignIn(onTap: googleSignIn),
-
-                          SizedBox(height: 20),
-
-                          // Already have an account? Sign In textbutton
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
+                              //enter name textfield
                               Text(
-                                'Already have an account?',
-                                style: TextStyle(color: Colors.grey[700]),
-                              ),
-
-                              SizedBox(width: 3),
-
-                              TextButton(
-                                onPressed: widget.onPressed,
-                                child: Text(
-                                  'Sign In',
-                                  style: TextStyle(
-                                    color: const Color.fromARGB(255, 0, 0, 230),
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                'Enter Your Name',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
+
+                              SizedBox(height: 10),
+
+                              Mytextfield(
+                                controller: nameController,
+                                hintText: 'Enter Your Full Name',
+                                obscureText: false,
+                                icon: Icons.person,
+                              ),
+
+                              SizedBox(height: 20),
+
+                              //email textfield
+                              Text(
+                                'Email',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+
+                              SizedBox(height: 10),
+
+                              Mytextfield(
+                                controller: emailController,
+                                hintText: ' Enter your email',
+                                obscureText: false,
+                                icon: Icons.email,
+                              ),
+
+                              SizedBox(height: 20),
+
+                              //password textfield
+                              Text(
+                                'Password',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+
+                              SizedBox(height: 10),
+
+                              Mytextfield(
+                                controller: passwordController,
+                                hintText: 'Create a  strong password',
+                                obscureText: true,
+                                icon: Icons.lock,
+                              ),
+
+                              SizedBox(height: 30),
+
+                              //sign in button (firebase auth) or show loading screen
+                              authVM.isLoading
+                                  ? Center(child: CircularProgressIndicator())
+                                  : Btn(
+                                      onTap: () => _createAccount(context),
+                                      text: 'Create Account',
+                                    ),
+
+                              SizedBox(height: 10),
+
+                              //error message
+                              if (authVM.errorMessage != null)
+                                Text(
+                                  authVM.errorMessage!,
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              SizedBox(height: 20),
+
+                              //or
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10.0,
+                                    ),
+                                    child: Text(
+                                      'or',
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 20),
+
+                              //google button (firebase auth)
+                              BtnGoogleSignIn(onTap: googleSignIn),
+
+                              SizedBox(height: 20),
+
+                              // Already have an account? Sign In textbutton
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Text(
+                                    'Already have an account?',
+                                    style: TextStyle(color: Colors.grey[700]),
+                                  ),
+
+                                  SizedBox(width: 3),
+
+                                  TextButton(
+                                    onPressed: widget.onPressed,
+                                    child: Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        color: const Color.fromARGB(
+                                          255,
+                                          0,
+                                          0,
+                                          230,
+                                        ),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 20),
                             ],
-                          ),
-                          SizedBox(height: 20),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rechoice_app/models/services/authenticate.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -70,8 +71,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.logout, color: Colors.blue),
-                        onPressed: () {
-                          print('Logout pressed');
+                        onPressed: () async {
+                          await authService.value.logout();
+                          if (context.mounted) {
+                            Navigator.pushReplacementNamed(context, '/admin');
+                          } else {}
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -402,10 +406,7 @@ class _ActivityCard extends StatelessWidget {
           // Icon
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
             child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 16),

@@ -3,7 +3,8 @@ import 'package:rechoice_app/pages/main-dashboard/catalog.dart';
 import 'package:rechoice_app/pages/main-dashboard/dashboard.dart';
 import 'package:rechoice_app/pages/main-dashboard/wishlist.dart';
 import 'package:rechoice_app/pages/payment/cart.dart';
-import 'package:rechoice_app/pages/users/user_profile_info.dart';
+import 'package:rechoice_app/pages/users/user_profile.dart';
+// import 'package:rechoice_app/pages/users/user_profile_info.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -28,7 +29,7 @@ class _LandingPageState extends State<LandingPage> {
       CatalogsPage(onBackPressed: _goToDashboard),
       CartPage(onBackPressed: _goToDashboard),
       WishlistPage(onBackPressed: _goToDashboard),
-      UserProfilePage(onBackPressed: _goToDashboard),
+      UserProfile(onBackPressed: _goToDashboard),
     ];
 
     return Scaffold(

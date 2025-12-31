@@ -3,75 +3,114 @@ import 'package:flutter/material.dart';
 import 'package:rechoice_app/components/btn_sign_in.dart';
 import 'package:rechoice_app/components/my_text_field.dart';
 import 'package:rechoice_app/models/services/authenticate.dart';
+import 'package:rechoice_app/models/services/firestore_service.dart';
+import 'package:rechoice_app/pages/admin/admin_dashboard.dart';
 
-class LoginPage extends StatefulWidget {
-  final VoidCallback? onPressed;
-  const LoginPage({super.key,  this.onPressed});
+class AdminLoginPage extends StatefulWidget {
+  const AdminLoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  String errorMessage = '';
+class _AdminLoginPageState extends State<AdminLoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _firestoreService = FirestoreService();
 
-  //sign user in method
-  void signUserIn() async {
+  String _errorMessage = '';
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _adminSignIn() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _errorMessage = '';
+      _isLoading = true;
+    });
+
     try {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return Center(child: CircularProgressIndicator());
-        },
+      final userCredential = await authService.value.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
-      await authService.value.login(
-        email: emailController.text,
-        password: passwordController.text,
-      );
-      popPage();
+
+      final uid = userCredential.user?.uid;
+      if (uid == null) {
+        throw Exception('Authentication failed');
+      }
+
+      //Check if user is admin in Firestore
+      final isAdmin = await _firestoreService.isAdmin(uid);
+      print('🔵 Is admin: $isAdmin');
+
+      if (!isAdmin) {
+        // Not an admin - sign them out
+        await authService.value.logout();
+
+        setState(() {
+          _errorMessage = 'Access denied. Admin credentials required.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      await _firestoreService.updateLastLogin(uid);
+
+      // Step 4: Navigate to admin dashboard
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) {
+              return const AdminDashboardPage();
+            },
+          ),
+          (route) => false,
+        );
+      }
     } on FirebaseAuthException catch (e) {
-      popPage();
+      print(' Firebase Auth Error: ${e.code}');
 
       setState(() {
-        errorMessage = e.message ?? "This is not working";
+        _isLoading = false;
+        switch (e.code) {
+          case 'user-not-found':
+            _errorMessage = 'No account found with this email.';
+            break;
+          case 'wrong-password':
+            _errorMessage = 'Incorrect password.';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'Invalid email format.';
+            break;
+          case 'user-disabled':
+            _errorMessage = 'This account has been disabled.';
+            break;
+          case 'too-many-requests':
+            _errorMessage = 'Too many attempts. Try again later.';
+            break;
+          default:
+            _errorMessage = e.message ?? 'Authentication failed.';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'An error occurred. Please try again.';
       });
     }
   }
 
-  void popPage() {
-    if (mounted) {
-      Navigator.pop(context);
-    }
+  void _navigateToUserLogin() {
+    Navigator.pushReplacementNamed(context, '/');
   }
-
-  //google sign in method
-  // Future<void> googleSignIn() async {
-  //   try {
-  //     showDialog(
-  //       context: context,
-  //       builder: (context) {
-  //         return Center(child: CircularProgressIndicator());
-  //       },
-  //     );
-  //     final userCredential = await authService.value.signInWithGoogle();
-  //     popPage();
-  //     if (userCredential != null) {
-  //       Navigator.pushReplacementNamed(context, '/dashboard');
-  //     }
-  //   } on FirebaseAuthException catch (e) {
-  //     popPage();
-  //     setState(() {
-  //       errorMessage = e.message ?? 'This is not working';
-  //     });
-  //   } catch (e) {
-  //     popPage();
-  //     setState(() {
-  //       errorMessage = 'An unexpected error occurred. Please try again.';
-  //     });
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +123,9 @@ class _LoginPageState extends State<LoginPage> {
               gradient: LinearGradient(
                 begin: Alignment.topRight,
                 colors: [
-                  Colors.blue[900]!,
-                  Colors.blue[700]!,
-                  Colors.blue[500]!,
+                  Colors.deepPurple[900]!,
+                  Colors.deepPurple[700]!,
+                  Colors.deepPurple[500]!,
                 ],
               ),
             ),
@@ -97,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.all(2.0),
                     child: Column(
                       children: <Widget>[
-                        //LOGO ReChoice
+                        // Rechoice logo
                         Image.asset(
                           'assets/images/logo.png',
                           height: 250,
@@ -105,9 +144,11 @@ class _LoginPageState extends State<LoginPage> {
                           color: Colors.white,
                         ),
 
-                        //text Welcome Back ! Sign in to continue
+                        SizedBox(height: 20),
+
+                        // Admin Portal Text
                         Text(
-                          'Welcome!',
+                          'Welcome Administrator',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -118,14 +159,14 @@ class _LoginPageState extends State<LoginPage> {
                         SizedBox(height: 10),
 
                         Text(
-                          'Sign in to your account to continue',
+                          'Authorized personnel only',
                           style: TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
 
-                  //white container for textFields
+                  // White container for textFields
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Container(
@@ -139,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                           children: <Widget>[
                             SizedBox(height: 40),
 
-                            //email/phone number textfield
+                            // Admin email textfield
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 25.0,
@@ -148,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Email/Phone Number',
+                                    'Admin Email',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -161,15 +202,15 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: 10),
 
                             Mytextfield(
-                              controller: emailController,
-                              hintText: 'Enter your email or phone number',
+                              controller: _emailController,
+                              hintText: 'Enter admin email',
                               obscureText: false,
                               icon: Icons.email,
                             ),
 
                             SizedBox(height: 20),
 
-                            //password textfield
+                            // Password textfield
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 25.0,
@@ -191,55 +232,37 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: 10),
 
                             Mytextfield(
-                              controller: passwordController,
-                              hintText: 'Enter your password',
+                              controller: _passwordController,
+                              hintText: 'Enter password',
                               obscureText: true,
                               icon: Icons.lock,
                             ),
 
-                            SizedBox(height: 10),
+                            SizedBox(height: 30),
 
-                            //forgot password textbutton
-                            Padding(
-                              padding: EdgeInsets.all(5.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pushNamed(context, '/resetPW');
-                                    },
-                                    child: Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        color: const Color.fromARGB(
-                                          255,
-                                          0,
-                                          0,
-                                          230,
-                                        ),
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                            // Sign in button
+                            _isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.deepPurple,
                                     ),
+                                  )
+                                : Btn(
+                                    onTap: _adminSignIn,
+                                    text: 'Sign In as Admin',
                                   ),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: 10),
-
-                            //signin button (firebase auth)
-                            Btn(onTap: signUserIn, text: 'Sign In'),
 
                             SizedBox(height: 15),
+
+                            // Error message
                             Text(
-                              errorMessage,
+                              _errorMessage,
                               style: TextStyle(color: Colors.redAccent),
                             ),
 
                             SizedBox(height: 20),
 
-                            //or
+                            // Divider
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 25.0,
@@ -276,13 +299,7 @@ class _LoginPageState extends State<LoginPage> {
 
                             SizedBox(height: 20),
 
-                            //google button (firebase auth)
-                            // BtnGoogleSignIn(onTap:
-                            // googleSignIn
-                            // ),
-                            SizedBox(height: 10),
-
-                            // don't have an account? sign up textbutton
+                            // Back to user login
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 25.0,
@@ -291,23 +308,18 @@ class _LoginPageState extends State<LoginPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: <Widget>[
                                   Text(
-                                    'Don\'t have an account?',
+                                    'Not an admin?',
                                     style: TextStyle(color: Colors.grey[700]),
                                   ),
 
                                   SizedBox(width: 3),
 
                                   TextButton(
-                                    onPressed: widget.onPressed,
+                                    onPressed: _navigateToUserLogin,
                                     child: Text(
-                                      'Sign Up',
+                                      'User Login',
                                       style: TextStyle(
-                                        color: const Color.fromARGB(
-                                          255,
-                                          0,
-                                          0,
-                                          230,
-                                        ),
+                                        color: Colors.deepPurple,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -315,32 +327,43 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                             ),
+
                             SizedBox(height: 20),
 
-                            //admin login toggle
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/admin');
-                              },
+                            // Security notice
+                            Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 20.0,
+                              ),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.deepPurple[200]!,
+                                ),
+                              ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.admin_panel_settings,
-                                    size: 16,
-                                    color: Colors.grey[600],
+                                    Icons.info_outline,
+                                    color: Colors.deepPurple[700],
+                                    size: 20,
                                   ),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    'Admin Access',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Admin access is restricted and monitored',
+                                      style: TextStyle(
+                                        color: Colors.deepPurple[700],
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+
                             SizedBox(height: 20),
                           ],
                         ),
