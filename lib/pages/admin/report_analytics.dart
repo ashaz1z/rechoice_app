@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rechoice_app/models/services/authenticate.dart';
 
 class ReportAnalyticsPage extends StatefulWidget {
   const ReportAnalyticsPage({super.key});
@@ -70,8 +71,15 @@ class _ReportAnalyticsPageState extends State<ReportAnalyticsPage> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.logout, color: Colors.blue),
-                        onPressed: () {
-                          print('Logout pressed');
+                        onPressed: () async {
+                          await authService.value.logout();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/',
+                              (route) => false,
+                            );
+                          }
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

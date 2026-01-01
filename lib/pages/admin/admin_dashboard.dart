@@ -74,8 +74,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         onPressed: () async {
                           await authService.value.logout();
                           if (context.mounted) {
-                            Navigator.pushReplacementNamed(context, '/admin');
-                          } else {}
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/',
+                              (route) => false,
+                            );
+                          }
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

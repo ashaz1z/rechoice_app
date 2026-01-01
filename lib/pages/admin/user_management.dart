@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rechoice_app/models/viewmodels/users_view_model.dart';
+import 'package:rechoice_app/models/model/users_model.dart';
+import 'package:rechoice_app/models/services/authenticate.dart';
+import 'package:rechoice_app/models/utils/export_utils.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -10,6 +15,83 @@ class UserManagementPage extends StatefulWidget {
 class _UserManagementPageState extends State<UserManagementPage> {
   int selectedTabIndex = 1; // User Management tab selected
   String selectedStatus = 'All Status';
+  String searchQuery = '';
+  List<Users> filteredUsers = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    final usersVM = context.read<UsersViewModel>();
+    await usersVM.loadUsers();
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+        _filterUsers();
+      });
+    }
+  }
+
+  void _filterUsers() {
+    final usersVM = context.read<UsersViewModel>();
+    final allUsers = usersVM.users;
+
+    filteredUsers = allUsers.where((user) {
+      // Filter by search query (name or email)
+      final matchesSearch = searchQuery.isEmpty ||
+          user.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+          user.email.toLowerCase().contains(searchQuery.toLowerCase());
+
+      // Filter by status - convert enum to string for comparison
+      final userStatusString = user.status.toString().split('.').last.toLowerCase();
+      final matchesStatus = selectedStatus == 'All Status' ||
+          (selectedStatus == 'Active' && userStatusString == 'active') ||
+          (selectedStatus == 'Suspended' && userStatusString == 'suspended') ||
+          (selectedStatus == 'Inactive' && userStatusString == 'inactive');
+
+      // Don't show deleted users
+      final isNotDeleted = userStatusString != 'deleted';
+
+      return matchesSearch && matchesStatus && isNotDeleted;
+    }).toList();
+  }
+
+  Future<void> _exportUsers() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exporting users...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      final filePath = await ExportUtils.exportUsersToCSV(filteredUsers);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Users exported successfully to ${filePath.split('/').last}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Export failed: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +153,15 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.logout, color: Colors.blue),
-                        onPressed: () {
-                          print('Logout pressed');
+                        onPressed: () async {
+                          await authService.value.logout();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/',
+                              (route) => false,
+                            );
+                          }
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -146,6 +235,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     const SizedBox(height: 24),
                     // Search Bar
                     TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value;
+                          _filterUsers();
+                        });
+                      },
                       decoration: InputDecoration(
                         hintText: 'Search users...',
                         hintStyle: TextStyle(color: Colors.grey[400]),
@@ -205,16 +300,16 @@ class _UserManagementPageState extends State<UserManagementPage> {
                               onChanged: (value) {
                                 setState(() {
                                   selectedStatus = value!;
+                                  _filterUsers();
                                 });
-                                print('Status filter: $value');
                               },
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
-                          onPressed: () {
-                            print('Export pressed');
+                          onPressed: () async {
+                            _exportUsers();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
@@ -301,34 +396,35 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       ),
                     ),
                     // User Rows
-                    _UserRow(
-                      name: 'John Smith',
-                      email: 'john@example.com',
-                      status: 'active',
-                      joinDate: '2024-01-15',
-                      lastActive: '2024-03-10',
-                    ),
-                    _UserRow(
-                      name: 'Sarah Johnson',
-                      email: 'sarah@example.com',
-                      status: 'suspended',
-                      joinDate: '2024-02-20',
-                      lastActive: '2024-03-08',
-                    ),
-                    _UserRow(
-                      name: 'Mike Chen',
-                      email: 'mike@example.com',
-                      status: 'active',
-                      joinDate: '2024-01-05',
-                      lastActive: '2024-03-11',
-                    ),
-                    _UserRow(
-                      name: 'Emma Wilson',
-                      email: 'emma@example.com',
-                      status: 'active',
-                      joinDate: '2024-02-28',
-                      lastActive: '2024-03-09',
-                    ),
+                    if (isLoading)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (filteredUsers.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: Text(
+                            'No users found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...filteredUsers.map((user) {
+                        return _UserRow(
+                          user: user,
+                          onView: () => _showUserDetails(user),
+                          onSuspend: () => _suspendUser(user),
+                          onActivate: () => _activateUser(user),
+                        );
+                      }).toList(),
                   ],
                 ),
               ),
@@ -337,6 +433,142 @@ class _UserManagementPageState extends State<UserManagementPage> {
         ],
       ),
     );
+  }
+
+  void _showUserDetails(Users user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(user.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Email: ${user.email}'),
+            const SizedBox(height: 8),
+            Text('Role: ${user.role.toString().split('.').last}'),
+            const SizedBox(height: 8),
+            Text('Status: ${user.status}'),
+            const SizedBox(height: 8),
+            Text('User ID: ${user.userID}'),
+            const SizedBox(height: 8),
+            Text('Join Date: ${user.joinDate}'),
+            if (user.bio != null && user.bio!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Bio: ${user.bio}'),
+            ],
+            if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Phone: ${user.phoneNumber}'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _suspendUser(Users user) async {
+    final usersVM = context.read<UsersViewModel>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Suspend User'),
+        content: Text('Are you sure you want to suspend ${user.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Suspend'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await usersVM.suspendUser(user.uid);
+      _loadUsers();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User suspended successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _activateUser(Users user) async {
+    final usersVM = context.read<UsersViewModel>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Activate User'),
+        content: Text('Are you sure you want to activate ${user.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Activate'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await usersVM.activateUser(user.uid);
+      _loadUsers();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User activated successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteUser(Users user) async {
+    final usersVM = context.read<UsersViewModel>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete User'),
+        content: Text(
+          'Are you sure you want to permanently delete ${user.name}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await usersVM.deleteUser(user.uid);
+      _loadUsers();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User deleted successfully')),
+        );
+      }
+    }
   }
 }
 
@@ -380,22 +612,23 @@ class _IconTab extends StatelessWidget {
 
 // User Row Widget
 class _UserRow extends StatelessWidget {
-  final String name;
-  final String email;
-  final String status;
-  final String joinDate;
-  final String lastActive;
+  final Users user;
+  final VoidCallback onView;
+  final VoidCallback onSuspend;
+  final VoidCallback onActivate;
 
   const _UserRow({
-    required this.name,
-    required this.email,
-    required this.status,
-    required this.joinDate,
-    required this.lastActive,
+    required this.user,
+    required this.onView,
+    required this.onSuspend,
+    required this.onActivate,
   });
 
   @override
   Widget build(BuildContext context) {
+    final userStatusString = user.status.toString().split('.').last;
+    final isSuspended = userStatusString.toLowerCase() == 'suspended';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -411,7 +644,7 @@ class _UserRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  user.name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -419,7 +652,7 @@ class _UserRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  email,
+                  user.email,
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
@@ -431,11 +664,11 @@ class _UserRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: status == 'active' ? Colors.green : Colors.red,
+                color: isSuspended ? Colors.red : Colors.green,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                status,
+                userStatusString.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
@@ -452,11 +685,7 @@ class _UserRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  joinDate,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                ),
-                Text(
-                  lastActive,
+                  user.joinDate.toString().split(' ')[0],
                   style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                 ),
               ],
@@ -469,9 +698,7 @@ class _UserRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 InkWell(
-                  onTap: () {
-                    print('View $name');
-                  },
+                  onTap: onView,
                   child: const Text(
                     'View',
                     style: TextStyle(
@@ -483,29 +710,11 @@ class _UserRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 InkWell(
-                  onTap: () {
-                    print(
-                      '${status == 'active' ? 'Suspend' : 'Activate'} $name',
-                    );
-                  },
+                  onTap: isSuspended ? onActivate : onSuspend,
                   child: Text(
-                    status == 'active' ? 'Suspend' : 'Activate',
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: () {
-                    print('Delete $name');
-                  },
-                  child: const Text(
-                    'Delete',
+                    isSuspended ? 'Activate' : 'Suspend',
                     style: TextStyle(
-                      color: Colors.red,
+                      color: isSuspended ? Colors.green : Colors.orange,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),

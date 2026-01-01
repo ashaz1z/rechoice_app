@@ -20,23 +20,48 @@ class _LoginPageState extends State<LoginPage> {
   //sign user in method
   void signUserIn() async {
     try {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return Center(child: CircularProgressIndicator());
-        },
-      );
+      print('DEBUG LoginPage: Starting sign in');
+      print('DEBUG LoginPage: Calling authService.login()');
       await authService.value.login(
         email: emailController.text,
         password: passwordController.text,
       );
-      popPage();
+      print('DEBUG LoginPage: Login successful, authStateChanges will handle navigation');
+      // Don't close page here - let authStateChanges handle navigation
     } on FirebaseAuthException catch (e) {
-      popPage();
-
-      setState(() {
-        errorMessage = e.message ?? "This is not working";
-      });
+      print('DEBUG LoginPage: FirebaseAuthException caught: ${e.code} - ${e.message}');
+      
+      if (mounted) {
+        print('DEBUG LoginPage: Showing error SnackBar');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? "Login failed"),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        
+        setState(() {
+          errorMessage = e.message ?? "Login failed";
+        });
+      }
+    } catch (e) {
+      print('DEBUG LoginPage: Generic exception caught: $e, Type: ${e.runtimeType}');
+      
+      if (mounted) {
+        print('DEBUG LoginPage: Showing generic error SnackBar');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        
+        setState(() {
+          errorMessage = 'An unexpected error occurred';
+        });
+      }
     }
   }
 

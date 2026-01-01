@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rechoice_app/models/services/authenticate.dart';
+import 'package:rechoice_app/models/utils/export_utils.dart';
 
 class ListingModerationPage extends StatefulWidget {
   const ListingModerationPage({super.key});
@@ -10,6 +12,87 @@ class ListingModerationPage extends StatefulWidget {
 class _ListingModerationPageState extends State<ListingModerationPage> {
   int selectedTabIndex = 2; // Listing Moderation tab selected
   String selectedStatus = 'All Status';
+  String searchQuery = '';
+  List<Map<String, dynamic>> filteredListings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMockListings();
+  }
+
+  void _loadMockListings() {
+    // TODO: Load actual listings from Firestore
+    // For now using mock data
+    filteredListings = [
+      {
+        'id': 'LIST001',
+        'title': 'iPhone 14 Pro',
+        'category': 'Electronics',
+        'price': 999.99,
+        'status': 'Approved',
+        'sellerName': 'John Doe',
+        'createdAt': DateTime.now().subtract(const Duration(days: 5)),
+        'views': 245,
+        'description': 'Excellent condition iPhone 14 Pro',
+      },
+      {
+        'id': 'LIST002',
+        'title': 'Winter Jacket',
+        'category': 'Fashion',
+        'price': 89.99,
+        'status': 'Pending',
+        'sellerName': 'Jane Smith',
+        'createdAt': DateTime.now().subtract(const Duration(days: 2)),
+        'views': 120,
+        'description': 'New winter jacket, size M',
+      },
+      {
+        'id': 'LIST003',
+        'title': 'Coffee Table',
+        'category': 'Home & Living',
+        'price': 149.99,
+        'status': 'Flagged',
+        'sellerName': 'Mike Johnson',
+        'createdAt': DateTime.now(),
+        'views': 45,
+        'description': 'Wooden coffee table in good condition',
+      },
+    ];
+  }
+
+  Future<void> _exportListings() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exporting listings...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      final filePath = await ExportUtils.exportListingsToCSV(filteredListings);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Listings exported successfully to ${filePath.split('/').last}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Export failed: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +154,15 @@ class _ListingModerationPageState extends State<ListingModerationPage> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.logout, color: Colors.blue),
-                        onPressed: () {
-                          print('Logout pressed');
+                        onPressed: () async {
+                          await authService.value.logout();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/',
+                              (route) => false,
+                            );
+                          }
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -225,8 +315,8 @@ class _ListingModerationPageState extends State<ListingModerationPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          print('Export Listings pressed');
+                        onPressed: () async {
+                          _exportListings();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,

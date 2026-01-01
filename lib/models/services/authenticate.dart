@@ -19,10 +19,70 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await firebaseAuth.signInWithEmailAndPassword(
+    print('DEBUG: Starting login for $email');
+    
+    final userCredential = await firebaseAuth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    print('DEBUG: Firebase Auth successful for ${userCredential.user?.uid}');
+
+    // Check user status in Firestore
+    if (userCredential.user != null) {
+      try {
+        print('DEBUG: Checking user status in Firestore');
+        final userDoc = await _firebaseFirestore.getUser(userCredential.user!.uid);
+        final userData = userDoc.data() as Map<String, dynamic>?;
+        
+        print('DEBUG: User data retrieved: $userData');
+        
+        if (userData != null) {
+          final status = userData['status'] as String?;
+          print('DEBUG: User status: $status');
+          
+          // Check if user is suspended
+          if (status == 'suspended') {
+            print('DEBUG: User is suspended, signing out immediately');
+            await firebaseAuth.signOut();
+            print('DEBUG: Signed out, now throwing exception');
+            throw FirebaseAuthException(
+              code: 'user-suspended',
+              message: '⛔ Account Suspended - Your account has been suspended by admin. Please contact support to restore access.',
+            );
+          }
+          
+          // Check if user is deleted
+          if (status == 'deleted') {
+            print('DEBUG: User is deleted, signing out immediately');
+            await firebaseAuth.signOut();
+            print('DEBUG: Signed out, now throwing exception');
+            throw FirebaseAuthException(
+              code: 'user-deleted',
+              message: '🗑️ Account Deleted - This account has been permanently deleted.',
+            );
+          }
+          
+          // If status is 'active' or any other value, allow login
+          print('DEBUG: User status is $status, allowing login');
+        } else {
+          // If userData is null, allow login (new user or document issue)
+          print('DEBUG: User data is null, allowing login');
+        }
+      } catch (e) {
+        print('DEBUG: Exception in status check: $e, Type: ${e.runtimeType}');
+        // If it's our custom error, rethrow it
+        if (e is FirebaseAuthException) {
+          print('DEBUG: Rethrowing FirebaseAuthException');
+          rethrow;
+        }
+        // For other errors, log but allow login
+        print('ERROR: Error checking user status, but allowing login: $e');
+      }
+    }
+
+    print('DEBUG: Login successful, returning credential');
+    return userCredential;
   }
 
   //
