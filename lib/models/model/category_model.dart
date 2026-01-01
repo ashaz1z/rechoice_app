@@ -33,11 +33,17 @@ class ItemCategoryModel {
 
   //Factory Method to create model instance from Json map
   factory ItemCategoryModel.fromJson(Map<String, dynamic> json) {
-    return ItemCategoryModel(
-      categoryID: json['categoryID'] as int,
-      name: json['name'] as String,
-      iconName: json['iconName'] as String,
-    );
+    print('DEBUG: Parsing ItemCategoryModel from: $json');
+    try {
+      return ItemCategoryModel(
+        categoryID: json['categoryID'] as int? ?? -1, // Safe cast with default
+        name: json['name'] as String? ?? '',
+        iconName: json['iconName'] as String? ?? 'default_icon',
+      );
+    } catch (e) {
+      print('DEBUG: Error in ItemCategoryModel.fromJson: $e');
+      return ItemCategoryModel.empty(); // Return empty on error
+    }
   }
 
   //Factory Method to convert model to Json structure for data storage in firebase

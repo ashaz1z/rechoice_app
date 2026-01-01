@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:rechoice_app/models/model/items_model.dart';
 import 'package:rechoice_app/models/services/item_service.dart';
@@ -10,14 +12,14 @@ class ItemsViewModel extends ChangeNotifier {
   // State management
   ItemsLoadingState _state = ItemsLoadingState.idle;
   String? _errorMessage;
-  
+
   // Item lists
   List<Items> _allItems = [];
   List<Items> _approvedItems = [];
   List<Items> _pendingItems = [];
   List<Items> _userItems = [];
   List<Items> _filteredItems = [];
-  
+
   // Search and filter state
   String _searchQuery = '';
   int? _selectedCategoryId;
@@ -84,11 +86,15 @@ class ItemsViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchUserItems(int userId) async {
+    print('DEBUG: Starting fetchUserItems for userId: $userId');
     _setState(ItemsLoadingState.loading);
     try {
+      print('DEBUG: Calling _itemService.getItemsBySeller');
       _userItems = await _itemService.getItemsBySeller(userId);
+      print('DEBUG: Fetched ${_userItems.length} items for userId: $userId');
       _setState(ItemsLoadingState.loaded);
     } catch (e) {
+      print('DEBUG: Error in fetchUserItems: $e');
       _setError('Failed to load user items: $e');
     }
   }
@@ -128,13 +134,13 @@ class ItemsViewModel extends ChangeNotifier {
   Future<bool> updateItem(String itemId, Map<String, dynamic> updates) async {
     try {
       await _itemService.updateItem(itemId, updates);
-      
+
       // Refresh relevant lists
       final updatedItem = await _itemService.getItemById(itemId);
       if (updatedItem != null) {
         _updateItemInLists(itemId, updatedItem);
       }
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -221,12 +227,12 @@ class ItemsViewModel extends ChangeNotifier {
   Future<bool> updateQuantity(String itemId, int newQuantity) async {
     try {
       await _itemService.updateQuantity(itemId, newQuantity);
-      
+
       final updatedItem = await _itemService.getItemById(itemId);
       if (updatedItem != null) {
         _updateItemInLists(itemId, updatedItem);
       }
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -267,7 +273,7 @@ class ItemsViewModel extends ChangeNotifier {
 
   Future<void> searchItems(String query) async {
     _searchQuery = query;
-    
+
     if (query.isEmpty) {
       _filteredItems = _approvedItems;
       notifyListeners();
@@ -321,31 +327,112 @@ class ItemsViewModel extends ChangeNotifier {
   // ==================== SORTING ====================
 
   void sortByPrice({bool ascending = true}) {
-    _filteredItems.sort((a, b) =>
-        ascending ? a.price.compareTo(b.price) : b.price.compareTo(a.price));
+    _filteredItems.sort(
+      (a, b) =>
+          ascending ? a.price.compareTo(b.price) : b.price.compareTo(a.price),
+    );
     notifyListeners();
   }
 
   void sortByDate({bool newest = true}) {
-    _filteredItems.sort((a, b) => newest
-        ? b.postedDate.compareTo(a.postedDate)
-        : a.postedDate.compareTo(b.postedDate));
+    _filteredItems.sort(
+      (a, b) => newest
+          ? b.postedDate.compareTo(a.postedDate)
+          : a.postedDate.compareTo(b.postedDate),
+    );
     notifyListeners();
   }
 
   void sortByPopularity() {
-    _filteredItems.sort((a, b) =>
-        b.popularityScore.compareTo(a.popularityScore));
+    _filteredItems.sort(
+      (a, b) => b.popularityScore.compareTo(a.popularityScore),
+    );
     notifyListeners();
+  }
+
+  // ==================== IMAGE UPLOAD ====================
+
+  Future<String?> uploadItemImage(File imageFile) async {
+    try {
+      // Generate temporary ID for upload path
+      final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+      final imageUrl = await _itemService.uploadItemImage(imageFile, tempId);
+      return imageUrl;
+    } catch (e) {
+      _setError('Failed to upload image: $e');
+      return null;
+    }
+  }
+
+  Future<List<String>?> uploadMultipleItemImages(List<File> imageFiles) async {
+    try {
+      final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+      final imageUrls = await _itemService.uploadMultipleImages(
+        imageFiles,
+        tempId,
+      );
+      return imageUrls;
+    } catch (e) {
+      _setError('Failed to upload images: $e');
+      return null;
+    }
+  }
+
+  Future<void> deleteItemImage(String imageUrl) async {
+    try {
+      await _itemService.deleteItemImage(imageUrl);
+    } catch (e) {
+      debugPrint('Failed to delete image: $e');
+    }
+  }
+
+  // ==================== ENHANCED CREATE WITH IMAGE ====================
+
+  Future<String?> createItemWithImage(Items item, File imageFile) async {
+    try {
+      // Validate inputs
+      if (item.sellerID == null || item.sellerID == 0) {
+        throw Exception('Invalid seller ID: ${item.sellerID}');
+      }
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist: ${imageFile.path}');
+      }
+
+      debugPrint('Step 1: Creating item for seller ${item.sellerID}');
+      final itemId = await _itemService.createItem(item);
+      if (itemId == null || itemId.isEmpty) {
+        throw Exception('Failed to create item: No ID returned');
+      }
+      debugPrint('Item created with ID: $itemId');
+
+      debugPrint('Step 2: Uploading image for item $itemId');
+      final imageUrl = await _itemService.uploadItemImage(imageFile, itemId);
+      if (imageUrl == null || imageUrl.isEmpty) {
+        throw Exception('Failed to upload image: No URL returned');
+      }
+      debugPrint('Image uploaded: $imageUrl');
+
+      debugPrint('Step 3: Updating item with image URL');
+      await _itemService.updateItem(itemId, {'image': imageUrl});
+      debugPrint('Item updated successfully');
+
+      debugPrint('Step 4: Refreshing user items for seller ${item.sellerID}');
+      await fetchUserItems(item.sellerID);
+      debugPrint('Lists refreshed');
+
+      return itemId;
+    } catch (e) {
+      debugPrint('Error in createItemWithImage: $e'); // Log the full error
+      _setError('Failed to create item with image: $e');
+      return null;
+    }
   }
 
   // ==================== HELPER METHODS ====================
 
   Items? getItemById(String itemId) {
     try {
-      return _allItems.firstWhere(
-        (item) => item.itemID.toString() == itemId,
-      );
+      return _allItems.firstWhere((item) => item.itemID.toString() == itemId);
     } catch (e) {
       return null;
     }

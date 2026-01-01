@@ -56,56 +56,56 @@ class Items {
   //Factory Method to create model instance from Json map
 
   factory Items.fromJson(Map<String, dynamic> json) {
-    final postedTs = json['postedDate'];
-    final moderatedTs = json['moderatedDate'];
-    // Added null check for safety
-    return Items(
-      itemID: json['itemID'] as int? ?? 0, // Added cast and default
+    print('DEBUG: Starting fromJson for item: ${json['itemID']}');
+    try {
+      final postedTs = json['postedDate'];
+      final moderatedTs = json['moderatedDate'];
+      print('DEBUG: Parsing timestamps and basic fields');
 
-      title: json['title'] as String? ?? '',
-
-      category: json['category'] != null
+      // Add prints before each major field
+      print('DEBUG: Parsing category');
+      final category = json['category'] != null
           ? ItemCategoryModel.fromJson(json['category'] as Map<String, dynamic>)
-          : ItemCategoryModel.empty(),
+          : ItemCategoryModel.empty();
 
-      brand: json['brand'] as String? ?? '',
-
-      condition: json['condition'] as String? ?? '',
-
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-
-      quantity: json['quantity'] as int? ?? 0,
-
-      description: json['description'] as String? ?? '',
-
-      status: json['status'] as String? ?? 'available',
-
-      imagePath: json['image'] as String? ?? '', // Matches the field name
-
-      moderationStatus: ModerationStatus.values.firstWhere(
+      print('DEBUG: Parsing moderationStatus');
+      final moderationStatus = ModerationStatus.values.firstWhere(
         (e) => e.toString() == 'ModerationStatus.${json['moderationStatus']}',
-
         orElse: () => ModerationStatus.pending,
-      ),
+      );
 
-      postedDate: postedTs is Timestamp ? postedTs.toDate() : DateTime.now(),
+      print('DEBUG: Creating Items object');
 
-      sellerID: json['sellerID'] as int? ?? 0, // Added cast and default
-
-      rejectionReason: json['rejectionReason'] as String?,
-
-      moderatedDate: moderatedTs is Timestamp ? moderatedTs.toDate() : null,
-
-      moderatedBy: json['moderatedBy'] as int?, // Added cast
-
-      sellerName: json['sellerName'] as String?,
-
-      sellerRating: (json['sellerRating'] as num?)?.toDouble(),
-
-      viewCount: json['viewCount'] as int? ?? 0,
-
-      favoriteCount: json['favoriteCount'] as int? ?? 0,
-    );
+      final item = Items(
+        itemID: json['itemID'] as int? ?? 0,
+        title: json['title'] as String? ?? '',
+        category: category,
+        brand: json['brand'] as String? ?? '',
+        condition: json['condition'] as String? ?? '',
+        price: (json['price'] as num?)?.toDouble() ?? 0.0,
+        quantity: json['quantity'] as int? ?? 0,
+        description: json['description'] as String? ?? '',
+        status: json['status'] as String? ?? 'available',
+        imagePath: json['image'] as String? ?? '',
+        moderationStatus: moderationStatus,
+        postedDate: postedTs is Timestamp ? postedTs.toDate() : DateTime.now(),
+        sellerID: json['sellerID'] as int? ?? 0,
+        rejectionReason: json['rejectionReason'] as String?,
+        moderatedDate: moderatedTs is Timestamp ? moderatedTs.toDate() : null,
+        moderatedBy: json['moderatedBy'] as int?,
+        sellerName: json['sellerName'] as String?,
+        sellerRating: (json['sellerRating'] as num?)?.toDouble(),
+        viewCount: json['viewCount'] as int? ?? 0,
+        favoriteCount: json['favoriteCount'] as int? ?? 0,
+      );
+      print(
+        'DEBUG: Items object created successfully for itemID: ${item.itemID}',
+      );
+      return item;
+    } catch (e) {
+      print('DEBUG: Error in Items.fromJson: $e for json: $json');
+      rethrow; // Re-throw so it's caught in getItemsBySeller
+    }
   }
 
   //Factory Method to convert model to Json structure for data storage in firebase

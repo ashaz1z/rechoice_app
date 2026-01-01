@@ -1,0 +1,185 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rechoice_app/models/model/category_model.dart';
+import 'package:rechoice_app/models/services/firestore_service.dart';
+
+class CategoryService {
+  final FirestoreService _firestoreService;
+
+  CategoryService(this._firestoreService);
+
+  CollectionReference get _categoriesCollection =>
+      _firestoreService.firestoreInstance.collection('categories');
+
+  CollectionReference get _metadataCollection =>
+      _firestoreService.firestoreInstance.collection('metadata');
+
+  // ==================== CREATE ====================
+
+  Future<String> createCategory({
+    required String name,
+    required String iconName,
+  }) async {
+    try {
+      final counterRef = _metadataCollection.doc('categoryCounter');
+      int nextCategoryID = 1;
+
+      final counterDoc = await counterRef.get();
+      if (counterDoc.exists) {
+        final data = counterDoc.data() as Map<String, dynamic>?;
+        nextCategoryID = (data?['count'] ?? 0) + 1;
+      }
+      await counterRef.set({'count': nextCategoryID});
+
+      final docRef = await _categoriesCollection.add({
+        'categoryID': nextCategoryID,
+        'name': name,
+        'iconName': iconName,
+      });
+
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Failed to create category: $e');
+    }
+  }
+
+  // ==================== READ ====================
+
+  Future<ItemCategoryModel?> getCategoryById(String categoryId) async {
+    try {
+      final doc = await _categoriesCollection.doc(categoryId).get();
+      if (!doc.exists) return null;
+      return ItemCategoryModel.fromJson(doc.data() as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to get category: $e');
+    }
+  }
+
+  Future<ItemCategoryModel?> getCategoryByNumericId(int categoryId) async {
+    try {
+      final snapshot = await _categoriesCollection
+          .where('categoryID', isEqualTo: categoryId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+      return ItemCategoryModel.fromJson(
+        snapshot.docs.first.data() as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception('Failed to get category: $e');
+    }
+  }
+
+  Future<List<ItemCategoryModel>> getAllCategories() async {
+    try {
+      final snapshot = await _categoriesCollection.orderBy('name').get();
+
+      return snapshot.docs
+          .map(
+            (doc) =>
+                ItemCategoryModel.fromJson(doc.data() as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get categories: $e');
+    }
+  }
+
+  Stream<List<ItemCategoryModel>> streamCategories() {
+    return _categoriesCollection
+        .orderBy('name')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => ItemCategoryModel.fromJson(
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
+        );
+  }
+
+  // ==================== UPDATE ====================
+
+  Future<void> updateCategory(
+    String categoryId,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      await _categoriesCollection.doc(categoryId).update(updates);
+    } catch (e) {
+      throw Exception('Failed to update category: $e');
+    }
+  }
+
+  // ==================== DELETE ====================
+
+  Future<void> deleteCategory(String categoryId) async {
+    try {
+      await _categoriesCollection.doc(categoryId).delete();
+    } catch (e) {
+      throw Exception('Failed to delete category: $e');
+    }
+  }
+
+  // ==================== UTILITY ====================
+
+  Future<bool> categoryExists(String name) async {
+    try {
+      final snapshot = await _categoriesCollection
+          .where('name', isEqualTo: name)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      throw Exception('Failed to check category existence: $e');
+    }
+  }
+
+  Future<int> getCategoryCount() async {
+    try {
+      final snapshot = await _categoriesCollection.count().get();
+      return snapshot.count ?? 0;
+    } catch (e) {
+      throw Exception('Failed to get category count: $e');
+    }
+  }
+
+  // ==================== SEED DATA ====================
+
+  Future<void> seedDefaultCategories() async {
+    try {
+      final count = await getCategoryCount();
+      if (count > 0) {
+        print('Categories already exist, skipping seed');
+        return;
+      }
+
+      // Explicitly typed to fix the '[]' operator error on Object
+      final defaultCategories = <Map<String, String>>[
+        {'name': 'Electronics', 'iconName': 'electronics'},
+        {'name': 'Clothing', 'iconName': 'clothing'},
+        {'name': 'Books', 'iconName': 'books'},
+        {'name': 'Home & Garden', 'iconName': 'home'},
+        {'name': 'Sports', 'iconName': 'sports'},
+        {'name': 'Toys', 'iconName': 'toys'},
+        {'name': 'Beauty', 'iconName': 'beauty'},
+        {'name': 'Automotive', 'iconName': 'automotive'},
+      ];
+
+      for (final category in defaultCategories) {
+        final name = category['name'];
+        final iconName = category['iconName'];
+        if (name != null && iconName != null) {
+          await createCategory(name: name, iconName: iconName);
+        }
+      }
+
+      print('✅ Default categories seeded successfully');
+    } catch (e) {
+      throw Exception('Failed to seed categories: $e');
+    }
+  }
+}
