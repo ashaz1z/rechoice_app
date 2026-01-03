@@ -5,7 +5,6 @@ import 'package:rechoice_app/models/model/category_model.dart';
 import 'package:rechoice_app/models/model/items_model.dart';
 import 'package:rechoice_app/models/services/authenticate.dart';
 import 'package:rechoice_app/models/services/dummy_data.dart';
-import 'package:rechoice_app/models/services/firestore_service.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});

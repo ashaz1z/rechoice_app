@@ -19,6 +19,7 @@ import 'package:rechoice_app/pages/admin/user_management.dart';
 import 'package:rechoice_app/pages/ai-features/chatbot.dart';
 import 'package:rechoice_app/pages/auth/auth_gate.dart';
 import 'package:rechoice_app/pages/auth/change_password.dart';
+import 'package:rechoice_app/pages/auth/loading_page.dart';
 import 'package:rechoice_app/pages/auth/login_admin.dart';
 import 'package:rechoice_app/pages/auth/login_page.dart';
 import 'package:rechoice_app/pages/auth/register.dart';
@@ -115,9 +116,8 @@ class MainApp extends StatelessWidget {
         '/adminDashboard': (context) => const AdminDashboardPage(),
         '/listingMod': (context) => const ListingModerationPage(),
         '/report': (context) => const ReportAnalyticsPage(),
-        '/manageUser': (context) => _AdminRouteGuard(
-              child: const UserManagementPage(),
-            ),
+        '/manageUser': (context) =>
+            _AdminRouteGuard(child: const UserManagementPage()),
         '/chatbot': (context) => const Chatbot(),
       },
     );
@@ -145,18 +145,16 @@ class _AdminRouteGuardState extends State<_AdminRouteGuard> {
   }
 
   Future<void> _checkAdminAccess() async {
-    final authVM = context.read<AuthViewModel>();
-    final usersVM = context.read<UsersViewModel>();
+    final authService = AuthService();
 
-    final currentUser = authVM.currentUser;
-    if (currentUser == null) {
+    if (authService.currentUser == null) {
       _redirectToLogin();
       return;
     }
 
     try {
-      final user = await usersVM.fetchUserByUid(currentUser.uid);
-      if (user != null && user.isAdmin) {
+      final isAdmin = await authService.isAdmin();
+      if (isAdmin) {
         setState(() {
           _hasAccess = true;
           _isChecking = false;
@@ -188,11 +186,7 @@ class _AdminRouteGuardState extends State<_AdminRouteGuard> {
   @override
   Widget build(BuildContext context) {
     if (_isChecking) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return LoadingPage();
     }
 
     if (!_hasAccess) {

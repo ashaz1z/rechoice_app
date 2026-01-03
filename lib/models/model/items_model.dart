@@ -30,7 +30,7 @@ class Items {
   final int viewCount; // Track popularity
   final int favoriteCount; // Track wishlist adds
 
-  Items({
+  const Items({
     required this.itemID,
     required this.title,
     required this.category,
