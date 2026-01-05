@@ -21,6 +21,12 @@ class MyProductsTab extends StatefulWidget {
 
 class _MyProductsTabState extends State<MyProductsTab> {
   @override
+  void initState() {
+    super.initState();
+    print('DEBUG: MyProductsTab initialized for user ID: ${widget.user.userID}');
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.itemsVM.isLoading) {
       return const Center(child: CircularProgressIndicator());
