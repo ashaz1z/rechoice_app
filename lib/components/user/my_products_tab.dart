@@ -4,7 +4,7 @@ import 'package:rechoice_app/components/user/my_product_card.dart';
 import 'package:rechoice_app/models/model/users_model.dart';
 import 'package:rechoice_app/models/viewmodels/items_view_model.dart';
 
-class MyProductsTab extends StatelessWidget {
+class MyProductsTab extends StatefulWidget {
   final ItemsViewModel itemsVM;
   final bool isOwnProfile;
   final Users user;
@@ -16,12 +16,17 @@ class MyProductsTab extends StatelessWidget {
   });
 
   @override
+  State<MyProductsTab> createState() => _MyProductsTabState();
+}
+
+class _MyProductsTabState extends State<MyProductsTab> {
+  @override
   Widget build(BuildContext context) {
-    if (itemsVM.isLoading) {
-      return Center(child: CircularProgressIndicator());
+    if (widget.itemsVM.isLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (itemsVM.userItems.isEmpty) {
+    if (widget.itemsVM.userItems.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -41,15 +46,20 @@ class MyProductsTab extends StatelessWidget {
               onPressed: () async {
                 final added = await showDialog<bool>(
                   context: context,
-                  builder: (context) => AddProductDialog(userId: user.userID),
+                  builder: (context) => AddProductDialog(userId: widget.user.userID),
                 );
 
                 if (added == true) {
-                  itemsVM.fetchUserItems(user.userID);
+                  // Refresh the items list
+                  await widget.itemsVM.fetchUserItems(widget.user.userID);
+                  // Trigger rebuild to show products
+                  if (mounted) {
+                    setState(() {});
+                  }
                 }
               },
-              label: Text('Add Product'),
-              icon: Icon(Icons.add_circle, color: Colors.white),
+              label: const Text('Add Product'),
+              icon: const Icon(Icons.add_circle, color: Colors.white),
             ),
           ],
         ),
@@ -58,7 +68,7 @@ class MyProductsTab extends StatelessWidget {
 
     return Column(
       children: [
-        if (isOwnProfile)
+        if (widget.isOwnProfile)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
@@ -66,7 +76,7 @@ class MyProductsTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${itemsVM.userItems.length} Products',
+                  '${widget.itemsVM.userItems.length} Products',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -78,15 +88,17 @@ class MyProductsTab extends StatelessWidget {
                     final added = await showDialog<bool>(
                       context: context,
                       builder: (context) =>
-                          AddProductDialog(userId: user.userID),
+                          AddProductDialog(userId: widget.user.userID),
                     );
 
                     if (added == true) {
-                      itemsVM.fetchUserItems(user.userID);
+                      await widget.itemsVM.fetchUserItems(widget.user.userID);
+                      if (mounted) {
+                        setState(() {});
+                      }
                     }
                   },
-                  child: Text('Add Product',style: TextStyle(color:Colors.blue),),
-
+                  child: const Text('Add Product', style: TextStyle(color: Colors.blue)),
                 ),
               ],
             ),
@@ -101,13 +113,13 @@ class MyProductsTab extends StatelessWidget {
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.75,
               ),
-              itemCount: itemsVM.userItems.length,
+              itemCount: widget.itemsVM.userItems.length,
               itemBuilder: (context, index) {
-                final item = itemsVM.userItems[index];
+                final item = widget.itemsVM.userItems[index];
                 return MyProductCard(item: item);
               },
             ),
-            onRefresh: () => itemsVM.fetchUserItems(user.userID),
+            onRefresh: () => widget.itemsVM.fetchUserItems(widget.user.userID),
           ),
         ),
       ],

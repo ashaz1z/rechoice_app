@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rechoice_app/components/admin/admin_shared_widget.dart';
 import 'package:rechoice_app/models/utils/export_utils.dart';
+import 'package:rechoice_app/models/services/listing_moderation_service.dart';
 
 class ListingModerationPage extends StatefulWidget {
   const ListingModerationPage({super.key});
@@ -10,61 +11,65 @@ class ListingModerationPage extends StatefulWidget {
 }
 
 class _ListingModerationPageState extends State<ListingModerationPage> {
+  late ListingModerationService _service;
   int selectedTabIndex = 2; // Listing Moderation tab selected
   String selectedStatus = 'All Status';
   String searchQuery = '';
-  List<Map<String, dynamic>> filteredListings = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _loadMockListings();
-    });
+    _service = ListingModerationService();
   }
 
-  void _loadMockListings() {
-    // TODO: Load actual listings from Firestore
-    // For now using mock data
-    filteredListings = [
-      {
-        'id': 'LIST001',
-        'title': 'iPhone 14 Pro',
-        'category': 'Electronics',
-        'price': 999.99,
-        'status': 'Approved',
-        'sellerName': 'John Doe',
-        'createdAt': DateTime.now().subtract(const Duration(days: 5)),
-        'views': 245,
-        'description': 'Excellent condition iPhone 14 Pro',
-      },
-      {
-        'id': 'LIST002',
-        'title': 'Winter Jacket',
-        'category': 'Fashion',
-        'price': 89.99,
-        'status': 'Pending',
-        'sellerName': 'Jane Smith',
-        'createdAt': DateTime.now().subtract(const Duration(days: 2)),
-        'views': 120,
-        'description': 'New winter jacket, size M',
-      },
-      {
-        'id': 'LIST003',
-        'title': 'Coffee Table',
-        'category': 'Home & Living',
-        'price': 149.99,
-        'status': 'Flagged',
-        'sellerName': 'Mike Johnson',
-        'createdAt': DateTime.now(),
-        'views': 45,
-        'description': 'Wooden coffee table in good condition',
-      },
-    ];
+  /// Fetch filtered listings from Firestore
+  Future<List<Map<String, dynamic>>> _getFilteredListings() async {
+    try {
+      // Convert UI status to Firestore status
+      String? statusFilter;
+      if (selectedStatus != 'All Status') {
+        statusFilter = selectedStatus.toLowerCase();
+      }
+
+      // If search query is empty, just get by status
+      if (searchQuery.isEmpty) {
+        return await _service.getListings(statusFilter: statusFilter);
+      }
+
+      // Otherwise, search with status filter
+      return await _service.searchListings(
+        searchQuery,
+        statusFilter: statusFilter,
+      );
+    } catch (e) {
+      print('❌ Error loading listings: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Error loading listings: $e')),
+        );
+      }
+      return [];
+    }
   }
 
   Future<void> _exportListings() async {
     try {
+      setState(() => _isLoading = true);
+
+      // Get current filtered listings
+      final listings = await _getFilteredListings();
+
+      if (listings.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No listings to export. Please adjust your filters.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Exporting listings...'),
@@ -72,30 +77,167 @@ class _ListingModerationPageState extends State<ListingModerationPage> {
         ),
       );
 
-      final filePath = await ExportUtils.exportListingsToCSV(filteredListings);
+      final filePath = await ExportUtils.exportListingsToCSV(listings);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '✅ Listings exported successfully to ${filePath.split('/').last}',
+              '✅ Exported ${listings.length} listings successfully to ${filePath.split('/').last}',
             ),
             duration: const Duration(seconds: 4),
-            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Export error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _approveListingAsync(String listingId) async {
+    try {
+      setState(() => _isLoading = true);
+      await _service.approveListingAsync(listingId);
+      if (mounted) {
+        setState(() {}); // Trigger rebuild to refresh list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Listing approved successfully'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Export failed: ${e.toString()}'),
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
+          SnackBar(content: Text('❌ Failed to approve: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _rejectListingAsync(String listingId) async {
+    try {
+      setState(() => _isLoading = true);
+      await _service.rejectListingAsync(listingId);
+      if (mounted) {
+        setState(() {}); // Trigger rebuild to refresh list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Listing rejected'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Failed to reject: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  Future<void> _flagListingAsync(String listingId) async {
+    try {
+      setState(() => _isLoading = true);
+      await _service.flagListingAsync(listingId, reason: 'Flagged by moderator');
+      if (mounted) {
+        setState(() {}); // Trigger rebuild to refresh list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Listing flagged'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Failed to flag: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _viewListing(Map<String, dynamic> listing) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text((listing['title'] ?? 'Listing Details').toString()),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('Seller', _safeString(listing['sellerName'], 'Unknown')),
+              _buildDetailRow('Price', 'RM${_safeString(listing['price'], 'N/A')}'),
+              _buildDetailRow('Category', _safeString(listing['category'], 'N/A')),
+              _buildDetailRow('Status', _safeString(listing['status'], 'Unknown')),
+              _buildDetailRow('Views', _safeString(listing['views'], '0')),
+              const SizedBox(height: 12),
+              const Text(
+                'Description',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _safeString(listing['description'], 'No description'),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _safeString(dynamic value, [String defaultValue = '']) {
+    if (value == null) return defaultValue;
+    if (value is String) return value;
+    if (value is num) return value.toString();
+    return value.toString();
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
+        Text(value, style: const TextStyle(fontSize: 12)),
+        const SizedBox(height: 12),
+      ],
+    );
   }
 
   @override
@@ -103,185 +245,173 @@ class _ListingModerationPageState extends State<ListingModerationPage> {
     return AdminSliverScaffold(
       selectedTabIndex: 2,
       title: 'Listing Moderation',
-      subtitle: 'Review and moderate user listings',
-
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // Content Section
-              // Search Bar and Filter
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search listings...',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButton<String>(
-                      value: selectedStatus,
-                      underline: const SizedBox(),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'All Status',
-                          child: Text('All Status'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Pending',
-                          child: Text('Pending'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Approved',
-                          child: Text('Approved'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Flagged',
-                          child: Text('Flagged'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          selectedStatus = value!;
-                        });
-                        print('Status filter: $value');
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Export Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    _exportListings();
+      subtitle: 'Review and manage user listings',
+      body: Column(
+        children: [
+          // Search and Filter Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey[100],
+            child: Column(
+              children: [
+                // Search Field
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  decoration: InputDecoration(
+                    hintText: 'Search by title, description, or seller...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  child: const Text(
-                    'Export Listings',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              // Table Header
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
+                const SizedBox(height: 12),
+                // Status Filter and Export Button
+                Row(
                   children: [
                     Expanded(
-                      flex: 4,
-                      child: Text(
-                        'LISTING',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
+                      child: DropdownButtonFormField<String>(
+                        initialValue: selectedStatus,
+                        items: ['All Status', 'Pending', 'Approved', 'Rejected', 'Flagged']
+                            .map(
+                              (status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedStatus = value;
+                            });
+                          }
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'STATUS',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'ACTIONS',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _exportListings,
+                      icon: const Icon(Icons.download),
+                      label: const Text('Export CSV'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              // Listing Rows
-              const _ListingRow(
-                title: 'iPhone 15 Pro Max',
-                postedDate: 'Posted on 2024-03-10',
-                price: 'RM1299',
-                status: 'pending',
-              ),
-              const _ListingRow(
-                title: 'MacBook Air M2',
-                postedDate: 'Posted on 2024-03-08',
-                price: 'RM4999',
-                status: 'approved',
-              ),
-              const _ListingRow(
-                title: 'Samsung Galaxy S24',
-                postedDate: 'Posted on 2024-03-09',
-                price: 'RM3299',
-                status: 'flagged',
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          // Listings List
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _getFilteredListings(),
+              builder: (context, snapshot) {
+                // Loading state
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                // Error state
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {});
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final listings = snapshot.data ?? [];
+
+                // Empty state
+                if (listings.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.inbox_outlined, size: 48),
+                        const SizedBox(height: 16),
+                        const Text('No listings found'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              searchQuery = '';
+                              selectedStatus = 'All Status';
+                            });
+                          },
+                          child: const Text('Clear Filters'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // List of listings
+                return Stack(
+                  children: [
+                    ListView.builder(
+                      itemCount: listings.length,
+                      itemBuilder: (context, index) {
+                        final listing = listings[index];
+                        return _ListingRow(
+                          listing: listing,
+                          onView: () => _viewListing(listing),
+                          onApprove: () =>
+                              _approveListingAsync(listing['id']),
+                          onReject: () => _rejectListingAsync(listing['id']),
+                          onFlag: () => _flagListingAsync(listing['id']),
+                        );
+                      },
+                    ),
+                    // Loading overlay
+                    if (_isLoading)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -289,19 +419,22 @@ class _ListingModerationPageState extends State<ListingModerationPage> {
 
 // Listing Row Widget
 class _ListingRow extends StatelessWidget {
-  final String title;
-  final String postedDate;
-  final String price;
-  final String status;
+  final Map<String, dynamic> listing;
+  final VoidCallback onView;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onFlag;
 
   const _ListingRow({
-    required this.title,
-    required this.postedDate,
-    required this.price,
-    required this.status,
+    required this.listing,
+    required this.onView,
+    required this.onApprove,
+    required this.onReject,
+    required this.onFlag,
   });
 
   Color _getStatusColor() {
+    final status = (listing['status'] ?? '').toString().toLowerCase();
     switch (status) {
       case 'pending':
         return Colors.orange;
@@ -309,6 +442,8 @@ class _ListingRow extends StatelessWidget {
         return Colors.green;
       case 'flagged':
         return Colors.red;
+      case 'rejected':
+        return Colors.red[800] ?? Colors.red;
       default:
         return Colors.grey;
     }
@@ -316,6 +451,9 @@ class _ListingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final price = listing['price'] ?? 0;
+    final priceStr = price is int ? 'RM$price' : 'RM${price.toStringAsFixed(2)}';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -331,24 +469,31 @@ class _ListingRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  listing['title'] ?? 'Unknown',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  postedDate,
+                  'Seller: ${listing['sellerName'] ?? 'Unknown'}',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  price,
+                  priceStr,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Category: ${listing['category'] ?? 'N/A'}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -367,7 +512,7 @@ class _ListingRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  status,
+                  (listing['status'] ?? 'unknown').toString().toUpperCase(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -384,51 +529,55 @@ class _ListingRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                InkWell(
-                  onTap: () {
-                    print('View $title');
-                  },
-                  child: const Text(
-                    'View',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                _ActionLink(
+                  label: 'View',
+                  color: Colors.blue,
+                  onTap: onView,
                 ),
                 const SizedBox(height: 4),
-                InkWell(
-                  onTap: () {
-                    print('Approve $title');
-                  },
-                  child: const Text(
-                    'Approve',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                _ActionLink(
+                  label: 'Approve',
+                  color: Colors.green,
+                  onTap: onApprove,
                 ),
                 const SizedBox(height: 4),
-                InkWell(
-                  onTap: () {
-                    print('Reject $title');
-                  },
-                  child: const Text(
-                    'Reject',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                _ActionLink(
+                  label: 'Reject',
+                  color: Colors.red,
+                  onTap: onReject,
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Reusable action link widget
+class _ActionLink extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionLink({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
