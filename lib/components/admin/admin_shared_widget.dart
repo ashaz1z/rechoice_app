@@ -111,13 +111,39 @@ class _AdminSliverScaffoldState extends State<AdminSliverScaffold>
                                     color: Colors.blue,
                                   ),
                                   onPressed: () async {
-                                    await authService.value.logout();
-                                    if (context.mounted) {
-                                      Navigator.pushNamedAndRemoveUntil(
-                                        context,
-                                        '/',
-                                        (route) => false,
-                                      );
+                                    // Show confirmation dialog
+                                    final shouldLogout = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Confirm Logout'),
+                                        content: const Text(
+                                          'Are you sure you want to logout? You will need to login again.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: Colors.red,
+                                            ),
+                                            child: const Text('Logout'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (shouldLogout == true && context.mounted) {
+                                      await authService.value.logout();
+                                      if (context.mounted) {
+                                        Navigator.pushNamedAndRemoveUntil(
+                                          context,
+                                          '/',
+                                          (route) => false,
+                                        );
+                                      }
                                     }
                                   },
                                   padding: EdgeInsets.zero,

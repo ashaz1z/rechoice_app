@@ -61,6 +61,29 @@ class MyProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Moderation Status Badge
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getModerationStatusColor(),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getModerationStatusText(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
                   if (item.isNew)
                     Positioned(
                       top: 8,
@@ -149,5 +172,31 @@ class MyProductCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _getModerationStatusColor() {
+    switch (item.moderationStatus) {
+      case ModerationStatus.pending:
+        return Colors.orange;
+      case ModerationStatus.approved:
+        return Colors.green;
+      case ModerationStatus.rejected:
+        return Colors.red;
+      case ModerationStatus.flagged:
+        return Colors.purple;
+    }
+  }
+
+  String _getModerationStatusText() {
+    switch (item.moderationStatus) {
+      case ModerationStatus.pending:
+        return 'PENDING';
+      case ModerationStatus.approved:
+        return 'APPROVED';
+      case ModerationStatus.rejected:
+        return 'REJECTED';
+      case ModerationStatus.flagged:
+        return 'FLAGGED';
+    }
   }
 }

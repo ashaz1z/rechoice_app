@@ -164,7 +164,7 @@ class AuthService {
           }
 
           // If status is 'active' or any other value, allow login
-          print('DEBUG: User status is $status, allowing login');
+          print('DEBUG: User status is $userStatus, allowing login');
         } else {
           // If userData is null on first attempt, try again
           // If it's the last attempt and still null, allow login (new user or document issue)

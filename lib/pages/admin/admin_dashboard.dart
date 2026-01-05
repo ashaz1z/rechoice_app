@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rechoice_app/components/admin/admin_shared_widget.dart';
+import 'package:rechoice_app/models/services/dashboard_service.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -9,7 +10,15 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  int selectedTabIndex = 0;
+  late final DashboardService _dashboardService;
+  late Future<DashboardMetrics> _metricsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardService = DashboardService();
+    _metricsFuture = _dashboardService.getDashboardMetrics();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,99 +26,168 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       selectedTabIndex: 0,
       title: 'Dashboard Overview',
       subtitle: 'Monitor your platform performance and key metrics',
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsetsGeometry.all(20),
-          child: Column(
-            children: [
-              // Stats Cards Grid
-              Row(
+      body: FutureBuilder<DashboardMetrics>(
+        future: _metricsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Total Users',
-                      value: '1,247',
-                      change: '+12.5% from last month',
-                      changeColor: Colors.green,
-                      icon: Icons.person,
-                      iconColor: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Active Users',
-                      value: '892',
-                      change: '+8.2% from last month',
-                      changeColor: Colors.green,
-                      icon: Icons.add,
-                      iconColor: Colors.teal,
-                    ),
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error loading dashboard: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _metricsFuture = _dashboardService.getDashboardMetrics();
+                      });
+                    },
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
+            );
+          }
+
+          final metrics = snapshot.data!;
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Total Listings',
-                      value: '3,456',
-                      change: '+15.3% from last month',
-                      changeColor: Colors.green,
-                      icon: Icons.tag_faces,
-                      iconColor: Colors.orange,
-                    ),
+                  // Stats Cards Grid
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Total Users',
+                          value: metrics.totalUsers.toString(),
+                          change: 'All registered users',
+                          changeColor: Colors.green,
+                          icon: Icons.person,
+                          iconColor: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Active Users',
+                          value: metrics.activeUsers.toString(),
+                          change: '${((metrics.activeUsers / (metrics.totalUsers > 0 ? metrics.totalUsers : 1)) * 100).toStringAsFixed(1)}% active',
+                          changeColor: Colors.green,
+                          icon: Icons.check_circle,
+                          iconColor: Colors.teal,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Pending Reports',
-                      value: '22',
-                      change: '+5 new reports',
-                      changeColor: Colors.red,
-                      icon: Icons.warning,
-                      iconColor: Colors.red,
-                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Total Listings',
+                          value: metrics.totalListings.toString(),
+                          change: 'Items on platform',
+                          changeColor: Colors.green,
+                          icon: Icons.shopping_bag,
+                          iconColor: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Pending Reports',
+                          value: metrics.pendingReports.toString(),
+                          change: metrics.pendingReports > 0 ? '⚠️ Needs review' : '✅ All clear',
+                          changeColor: metrics.pendingReports > 0 ? Colors.red : Colors.green,
+                          icon: Icons.warning,
+                          iconColor: metrics.pendingReports > 0 ? Colors.red : Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 32),
+                  // Recent Activity Section
+                  const Text(
+                    'Recent Activity',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  // Activity Cards
+                  if (metrics.recentActivity.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'No recent activity',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: metrics.recentActivity.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final activity = metrics.recentActivity[index];
+                        final iconData = _getActivityIcon(activity.iconType);
+
+                        return _ActivityCard(
+                          icon: iconData,
+                          iconColor: _getActivityColor(activity.type),
+                          title: activity.title,
+                          subtitle: activity.subtitle,
+                          time: activity.timeAgo,
+                        );
+                      },
+                    ),
                 ],
               ),
-              const SizedBox(height: 32),
-              // Recent Activity Section
-              const Text(
-                'Recent Activity',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              // Activity Cards
-              const _ActivityCard(
-                icon: Icons.person_add,
-                iconColor: Colors.blue,
-                title: 'New user registration',
-                subtitle: 'John Smith joined the platform',
-                time: '2 min ago',
-              ),
-              const SizedBox(height: 12),
-              const _ActivityCard(
-                icon: Icons.check,
-                iconColor: Colors.green,
-                title: 'Listing approved',
-                subtitle: 'iPhone 15 Pro listing was approved',
-                time: '5 min ago',
-              ),
-              const SizedBox(height: 12),
-              const _ActivityCard(
-                icon: Icons.close,
-                iconColor: Colors.red,
-                title: 'Report received',
-                subtitle: 'Inappropriate content reported',
-                time: '10 min ago',
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  IconData _getActivityIcon(String iconType) {
+    switch (iconType) {
+      case 'user':
+        return Icons.person_add;
+      case 'listing':
+        return Icons.shopping_bag;
+      case 'report':
+        return Icons.warning;
+      case 'message':
+        return Icons.message;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'user_registration':
+        return Colors.blue;
+      case 'listing_created':
+        return Colors.orange;
+      case 'listing_approved':
+        return Colors.green;
+      case 'report_filed':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
 
