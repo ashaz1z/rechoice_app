@@ -46,7 +46,7 @@ class _MyProductsTabState extends State<MyProductsTab> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Become a Seller'),
-          content: const Text('Contact admin to become seller: adminrechoice@gmail.com'),
+          content: const Text('Contact admin to become seller: admin@rechoice.com'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
